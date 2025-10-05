@@ -1,0 +1,40 @@
+@baseUrl = http://localhost:5278
+@usersEndpoint = /users
+
+### GET all users
+GET {{baseUrl}}{{usersEndpoint}}
+Accept: application/json
+
+###
+
+### GET user by ID
+GET {{baseUrl}}{{usersEndpoint}}/1
+Accept: application/json
+
+###
+
+### POST create new user
+POST {{baseUrl}}{{usersEndpoint}}
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "email": "alice@example.com"
+}
+
+###
+
+### PUT update user by ID
+PUT {{baseUrl}}{{usersEndpoint}}/1
+Content-Type: application/json
+
+{
+  "name": "Alice Updated",
+  "email": "alice.updated@example.com"
+}
+
+###
+
+### DELETE user by ID
+DELETE {{baseUrl}}{{usersEndpoint}}/1
+Accept: application/json
