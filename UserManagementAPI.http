@@ -1,26 +1,32 @@
 @baseUrl = http://localhost:5278
 @usersEndpoint = /users
+@tokenEndpoint = /token
 
-### ✅ GET all users
+### 🔐 Get JWT token
+POST {{baseUrl}}{{tokenEndpoint}}
+Accept: application/json
+
+###
+
+@authToken = Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIiwianRpIjoiMzZlMTI2M2YtNzYxYy00ZTkyLTg5ZDQtMTE3ODNkY2IyNTdlIiwiZXhwIjoxNzU5NjgwMTI0fQ.2dd32ourK0Iu3xl1bSuiS0OQG70LI2ni-u9yMTe8k0I
+
+### ✅ GET all users (authorized)
 GET {{baseUrl}}{{usersEndpoint}}
+Authorization: {{authToken}}
 Accept: application/json
 
 ###
 
-### 🔍 GET user by valid ID
+### 🔍 GET user by ID
 GET {{baseUrl}}{{usersEndpoint}}/1
-Accept: application/json
-
-###
-
-### ❌ GET user by invalid ID
-GET {{baseUrl}}{{usersEndpoint}}/999
+Authorization: {{authToken}}
 Accept: application/json
 
 ###
 
 ### 🆕 POST valid user
 POST {{baseUrl}}{{usersEndpoint}}
+Authorization: {{authToken}}
 Content-Type: application/json
 
 {
@@ -30,19 +36,9 @@ Content-Type: application/json
 
 ###
 
-### ❌ POST invalid user (missing name)
-POST {{baseUrl}}{{usersEndpoint}}
-Content-Type: application/json
-
-{
-  "name": "",
-  "email": "invalid@example.com"
-}
-
-###
-
-### ✏️ PUT valid update
+### ✏️ PUT update user
 PUT {{baseUrl}}{{usersEndpoint}}/1
+Authorization: {{authToken}}
 Content-Type: application/json
 
 {
@@ -52,34 +48,7 @@ Content-Type: application/json
 
 ###
 
-### ❌ PUT invalid update (bad email)
-PUT {{baseUrl}}{{usersEndpoint}}/1
-Content-Type: application/json
-
-{
-  "name": "Alice",
-  "email": "not-an-email"
-}
-
-###
-
-### ❌ PUT non-existent user
-PUT {{baseUrl}}{{usersEndpoint}}/999
-Content-Type: application/json
-
-{
-  "name": "Ghost",
-  "email": "ghost@example.com"
-}
-
-###
-
-### 🗑️ DELETE existing user
+### 🗑️ DELETE user
 DELETE {{baseUrl}}{{usersEndpoint}}/1
-Accept: application/json
-
-###
-
-### ❌ DELETE non-existent user
-DELETE {{baseUrl}}{{usersEndpoint}}/999
+Authorization: {{authToken}}
 Accept: application/json
