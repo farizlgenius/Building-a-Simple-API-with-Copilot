@@ -1,19 +1,25 @@
-@baseUrl = http://localhost:5278
+@baseUrl = http://localhost:5000
 @usersEndpoint = /users
 
-### GET all users
+### ✅ GET all users
 GET {{baseUrl}}{{usersEndpoint}}
 Accept: application/json
 
 ###
 
-### GET user by ID
+### 🔍 GET user by valid ID
 GET {{baseUrl}}{{usersEndpoint}}/1
 Accept: application/json
 
 ###
 
-### POST create new user
+### ❌ GET user by invalid ID
+GET {{baseUrl}}{{usersEndpoint}}/999
+Accept: application/json
+
+###
+
+### 🆕 POST valid user
 POST {{baseUrl}}{{usersEndpoint}}
 Content-Type: application/json
 
@@ -24,7 +30,18 @@ Content-Type: application/json
 
 ###
 
-### PUT update user by ID
+### ❌ POST invalid user (missing name)
+POST {{baseUrl}}{{usersEndpoint}}
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "invalid@example.com"
+}
+
+###
+
+### ✏️ PUT valid update
 PUT {{baseUrl}}{{usersEndpoint}}/1
 Content-Type: application/json
 
@@ -35,6 +52,34 @@ Content-Type: application/json
 
 ###
 
-### DELETE user by ID
+### ❌ PUT invalid update (bad email)
+PUT {{baseUrl}}{{usersEndpoint}}/1
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "email": "not-an-email"
+}
+
+###
+
+### ❌ PUT non-existent user
+PUT {{baseUrl}}{{usersEndpoint}}/999
+Content-Type: application/json
+
+{
+  "name": "Ghost",
+  "email": "ghost@example.com"
+}
+
+###
+
+### 🗑️ DELETE existing user
 DELETE {{baseUrl}}{{usersEndpoint}}/1
+Accept: application/json
+
+###
+
+### ❌ DELETE non-existent user
+DELETE {{baseUrl}}{{usersEndpoint}}/999
 Accept: application/json

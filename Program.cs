@@ -1,25 +1,50 @@
-using Microsoft.AspNetCore.Builder;
+using FluentValidation;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<UserDtoValidator>();
+
 var app = builder.Build();
 
-// In-memory user store
+// Global exception handler
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var error = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+        await context.Response.WriteAsJsonAsync(new { error = error?.Message });
+    });
+});
+
+// In-memory store
 var users = new ConcurrentDictionary<int, User>();
 var nextId = 1;
 
-// GET: Retrieve all users or a specific user by ID
-app.MapGet("/users", () => users.Values);
+// GET all users
+app.MapGet("/users", () => Results.Ok(users.Values));
 
+// GET user by ID
 app.MapGet("/users/{id:int}", (int id) =>
-    users.TryGetValue(id, out var user) ? Results.Ok(user) : Results.NotFound()
+    users.TryGetValue(id, out var user)
+        ? Results.Ok(user)
+        : Results.NotFound(new { error = $"User with ID {id} not found." })
 );
 
-// POST: Add a new user
-app.MapPost("/users", (UserDto newUser) =>
+// POST create user with validation
+app.MapPost("/users", async (UserDto newUser, IValidator<UserDto> validator) =>
 {
+    var validationResult = await validator.ValidateAsync(newUser);
+    if (!validationResult.IsValid)
+        return Results.BadRequest(validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+
     var user = new User
     {
         Id = nextId++,
@@ -30,11 +55,15 @@ app.MapPost("/users", (UserDto newUser) =>
     return Results.Created($"/users/{user.Id}", user);
 });
 
-// PUT: Update an existing user
-app.MapPut("/users/{id:int}", (int id, UserDto updatedUser) =>
+// PUT update user with validation
+app.MapPut("/users/{id:int}", async (int id, UserDto updatedUser, IValidator<UserDto> validator) =>
 {
     if (!users.ContainsKey(id))
-        return Results.NotFound();
+        return Results.NotFound(new { error = $"User with ID {id} not found." });
+
+    var validationResult = await validator.ValidateAsync(updatedUser);
+    if (!validationResult.IsValid)
+        return Results.BadRequest(validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
 
     var user = users[id];
     user.Name = updatedUser.Name;
@@ -42,11 +71,12 @@ app.MapPut("/users/{id:int}", (int id, UserDto updatedUser) =>
     return Results.Ok(user);
 });
 
-// DELETE: Remove a user by ID
+// DELETE user
 app.MapDelete("/users/{id:int}", (int id) =>
-{
-    return users.TryRemove(id, out _) ? Results.NoContent() : Results.NotFound();
-});
+    users.TryRemove(id, out _)
+        ? Results.NoContent()
+        : Results.NotFound(new { error = $"User with ID {id} not found." })
+);
 
 app.Run();
 
@@ -59,3 +89,18 @@ record User
 }
 
 record UserDto(string Name, string Email);
+
+// Validator
+class UserDtoValidator : AbstractValidator<UserDto>
+{
+    public UserDtoValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Name is required.")
+            .MinimumLength(2).WithMessage("Name must be at least 2 characters.");
+
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("Email must be valid.");
+    }
+}
