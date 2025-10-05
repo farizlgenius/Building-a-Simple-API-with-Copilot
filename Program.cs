@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Collections.Concurrent;
@@ -39,7 +40,7 @@ app.MapGet("/users/{id:int}", (int id) =>
 );
 
 // POST create user with validation
-app.MapPost("/users", async (UserDto newUser, IValidator<UserDto> validator) =>
+app.MapPost("/users", async (UserDto newUser, [FromServices] IValidator<UserDto> validator) =>
 {
     var validationResult = await validator.ValidateAsync(newUser);
     if (!validationResult.IsValid)
@@ -56,7 +57,7 @@ app.MapPost("/users", async (UserDto newUser, IValidator<UserDto> validator) =>
 });
 
 // PUT update user with validation
-app.MapPut("/users/{id:int}", async (int id, UserDto updatedUser, IValidator<UserDto> validator) =>
+app.MapPut("/users/{id:int}", async (int id, UserDto updatedUser, [FromServices] IValidator<UserDto> validator) =>
 {
     if (!users.ContainsKey(id))
         return Results.NotFound(new { error = $"User with ID {id} not found." });
@@ -88,10 +89,10 @@ record User
     public string Email { get; set; }
 }
 
-record UserDto(string Name, string Email);
+public record UserDto(string Name, string Email);
 
 // Validator
-class UserDtoValidator : AbstractValidator<UserDto>
+public class UserDtoValidator : AbstractValidator<UserDto>
 {
     public UserDtoValidator()
     {
